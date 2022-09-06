@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import requests
 import json
 import time
@@ -7,6 +8,20 @@ import string
 
 from requests import RequestException
 
+# Change lines below with your settings
+
+# File to store banned IPs
+# IDK for what is the purpose of it as banned IPs goes directly to qbittorrent settings
+fileAddress = r'./blacklist.txt'
+# webUI URL
+Root_url = 'http://127.0.0.1:8080'
+# webUI credentials
+# WARNING: CLEARTEXT PASSWORD
+# Make sure that the file is unreadable for others that torrent user
+data = {
+    'username': 'admin',
+    'password': 'adminadmin'
+}
 
 def getDownloadItem(url, cookie):
     # random number
@@ -97,6 +112,8 @@ def notExistIp(existFilerClient, ipsCollect):
     return newAddList
 
 
+# IDK what the purpose of this method
+# It gets trackers from github but for what?
 def loadTrackerByGithubAndSetting(url, cookie):
     github_headers = {
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,'
@@ -117,7 +134,8 @@ def loadTrackerByGithubAndSetting(url, cookie):
 
 
 if __name__ == "__main__":
-    # 定义需要过滤的客户端 name区分大小写 findType 1包含匹配 2前缀匹配
+    # Client names to be filtered, case sensitive
+    # findType 1 means contains, findType 2 - startWith
     filterClient = [
         {'name': '-XL0012', 'findType': 1},
         {'name': 'Xunlei', 'findType': 1},
@@ -126,18 +144,14 @@ if __name__ == "__main__":
         {'name': '7.', 'findType': 2}
     ]
     github_user_content_url = 'https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt'
-
-    # 将过滤的ip写入文件
-    fileAddress = r'I:\Program Files\qBittorrent\ipfilter.dat'
-    # webUi访问地址
-    Root_url = 'http://127.0.0.1:1000'
-    # 登陆接口
+    
+    # Login method
     login_url = Root_url + '/api/v2/auth/login'
-    # 获取正在下载项或上传项
+    # Get the item being downloaded or uploaded
     mainData_url = Root_url + '/api/v2/sync/maindata'
-    # 获取下载文件连接的用户
+    # Get the user who downloaded the file connection
     peers_url = Root_url + '/api/v2/sync/torrentPeers'
-    # 设置生效接口
+    # Update preferences
     filter_url = Root_url + '/api/v2/app/setPreferences'
 
     headers = {
@@ -153,28 +167,26 @@ if __name__ == "__main__":
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) '
                       'Chrome/78.0.3904.70 Safari/537.36 '
     }
-
-    # webUi登陆用户名密码
-    data = {
-        'username': 'admin',
-        'password': '123456789'
-    }
+    
     response = requests.post(login_url, data, headers=headers)
 
-    # login error 登陆失败退出
+    # login error
     if response.text != 'Ok.':
         exit(0)
 
     cookie_jar = response.cookies
-    try:
-        loadTrackerByGithubAndSetting(filter_url, cookie_jar)
-    except RequestException:
-        print('加载tracker服务器列表---失败')
-    else:
-        print('加载tracker服务器列表---成功')
-    # 进入循环运行
-
-    print('过滤器成功运行中...')
+    
+    # Uncomment line below, if you know what you do
+    
+    #try:
+    #    loadTrackerByGithubAndSetting(filter_url, cookie_jar)
+    #except RequestException:
+    #    print('Loading tracker list failed')
+    #else:
+    #    print('Trackers successfully loaded')
+    
+    print('Filter running successfully')
+    # Main loop
     while True:
         downItem = getDownloadItem(mainData_url, cookie_jar)
         downloadList = []
@@ -195,5 +207,5 @@ if __name__ == "__main__":
             # print(ips)
             reloadIpFilter(filter_url, ips, cookie_jar)
 
-        # 3秒执行一次
-        time.sleep(3)
+        # Execute every 30 seconds
+        time.sleep(30)
